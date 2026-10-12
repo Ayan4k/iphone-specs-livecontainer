@@ -1,0 +1,30 @@
+name: Build LiveContainer IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build unsigned iPhone app
+        run: |
+          xcodebuild archive \
+            -project iPhoneSpecs.xcodeproj \
+            -scheme iPhoneSpecs \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$PWD/build/iPhoneSpecs.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+          mkdir -p build/Payload
+          cp -R build/iPhoneSpecs.xcarchive/Products/Applications/iPhoneSpecs.app build/Payload/
+          (cd build && /usr/bin/zip -qry iPhoneSpecs.ipa Payload)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iPhoneSpecs-IPA
+          path: build/iPhoneSpecs.ipa
+          if-no-files-found: error
